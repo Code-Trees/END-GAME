@@ -92,7 +92,14 @@ For the image model we have the Receptive field calculated .
 
 4> **What results you finally got and how did you evaluate your results ?**
 
+![](Train_loss.png)![](Train_accuracy.png)
+
+
+
+![](Test_loss.png)![](Test_accuracy.png)
 
 
 
 
+
+Above is the  Loss graph for the model. The Loss is the combination of Loss 1 And Loss 2. where Loss one is 			**F.nll_loss(y_pred1, target1)** and Loss 2 is **nn.CrossEntropyLoss()**. To do this calculation of loss we have created a function total_loss.
