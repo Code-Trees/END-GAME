@@ -101,3 +101,4 @@ After Learning We got Task to Do. Trust Me it is Really Easy . Joking .... :-) :
    7. must mention what loss function you picked and why!
    8. training MUST happen on the GPU
 
+GitHub: https://github.com/Code-Trees/END-GAME/blob/main/Session_3
