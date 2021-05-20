@@ -15,7 +15,7 @@ In This Assignment We have to Build
 
 Github : 
 
-[1]: https://github.com/Code-Trees/END-GAME/blob/main/Session_3/Session_3.ipynb	"GitHub notebook Link "
+[Jupyter Notebook ]: https://github.com/Code-Trees/END-GAME/blob/main/Session_3/Session_3.ipynb	"GitHub notebook Link "
 
 
 
