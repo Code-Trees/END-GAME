@@ -13,11 +13,7 @@ In This Assignment We have to Build
    3. you can mix fully connected layers and convolution layers
    4. you can use one-hot encoding to represent the random number input as well as the "summed" output. 
 
-Github : 
-
-[Jupyter Notebook ]: https://github.com/Code-Trees/END-GAME/blob/main/Session_3/Session_3.ipynb	"GitHub notebook Link "
-
-
+Github : https://github.com/Code-Trees/END-GAME/blob/main/Session_3/Session_3.ipynb 
 
 ### 1>**Data representation.**
 
