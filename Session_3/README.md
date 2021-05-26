@@ -1,6 +1,6 @@
 # PyTorch Model Building 
 
-In This Assignment We have to Build 
+In This what We have to Build 
 
 1. Write a neural network that can:
    1. take 2 inputs:

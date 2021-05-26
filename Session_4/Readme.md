@@ -1,6 +1,6 @@
 # **4 - RNNs & LSTMs**
 
-**Assignment:** 
+**ToDo:** 
 
 1. Refer to online remove RNN and add LSTM to the model. 
 2. Refer to this . 

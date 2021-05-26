@@ -46,9 +46,3 @@
 
    In NN: NN needs to get the idea of how much error it is doing to predict the actual number . Loss function is  the amount of error generated   between actual out put and predicted output  and the objective of NN is to minimise loss. 
 
-   
-
-5. ###### What is the "chain rule" in gradient flow?
-
-   
-
