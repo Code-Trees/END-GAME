@@ -112,6 +112,8 @@ Put Questions : https://github.com/Code-Trees/END-GAME/issues/1
 
 GitHub: https://github.com/Code-Trees/END-GAME/blob/main/Session_3
 
+
+
 # **4 - RNNs & LSTMs**
 
 We will learn about **Recurrent Neural Networks and LSTMS**.  But let's keep in mind that how far RNNs/LSTMs are from the modern state of art.
