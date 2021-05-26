@@ -11,20 +11,19 @@ We started with basic of AI .We Learned  the below things.
 - Mathematics
 - Architectural Ingredients
 
-**Assignment**:
+**Skill_Test**:
 
 1. Rewrite the Colab file and:
    1. remove the last activation function
    2. make sure there are in total 44 parameters
    3. run it for 2001 epochs
-2. **You must upload your assignment to a public GitHub Repository and share the link as the submission to this assignment** 
+2. **Upload your work to a public GitHub Repository and share the link** 
 3. Add a readme file to your project and describe these things:
    1. What is a neural network neuron?
    2. What is the use of the learning rate?
    3. How are weights initialized?
    4. What is "loss" in a neural network?
    5. What is the "chain rule" in gradient flow?
-4. This assignment is worth 300 pts (150 for Code, and 150 for your readme file (directly proportional to your description).
 
 GitHub: https://github.com/Code-Trees/END-GAME/tree/main/Session_1
 
@@ -51,7 +50,7 @@ We learned about
 - Word Embeddings vs Language Model
 - Word2Vec
 
-**Assignment**:
+**Skill_Test**:
 
 1. Rewrite the whole excel sheet showing back propagation. Explain each major step, and write it on Github. 
 
@@ -61,7 +60,7 @@ We learned about
    4. Explain each major step
    5. Show what happens to the error graph when you change the learning rate from [0.1, 0.2, 0.5, 0.8, 1.0, 2.0] 
 
-2. Submit the GitHub link. Github link must be public (check the link without logging in, if it opens, then only share the link as an assignment). 
+2. Submit the GitHub link. Github link must be public (check the link without logging in, if it opens, then only share the link  ). 
 
    1. Sanity, please. 
 
@@ -79,7 +78,7 @@ After Learning We got Task to Do. Trust Me it is Really Easy . Joking .... :-) :
 
 
 
-**ASSIGNMENT**
+**Skill_Test**
 
 1. Write a neural network that can:
    1. take 2 inputs:
@@ -102,3 +101,14 @@ After Learning We got Task to Do. Trust Me it is Really Easy . Joking .... :-) :
    8. training MUST happen on the GPU
 
 GitHub: https://github.com/Code-Trees/END-GAME/blob/main/Session_3
+
+# **5 - RNNs & LSTMs**
+
+We will learn about **Recurrent Neural Networks and LSTMS**.  But let's keep in mind that how far RNNs/LSTMs are from the modern state of art.
+
+**Skill_Test:** 
+
+1.  Remove RNN and add LSTM to the model . 
+2. Refer to this . 
+   1. The questions this time are already mentioned in the file. Once you are done, then write your solutions. 
+
