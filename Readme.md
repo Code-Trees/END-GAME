@@ -102,7 +102,7 @@ After Learning We got Task to Do. Trust Me it is Really Easy . Joking .... :-) :
 
 GitHub: https://github.com/Code-Trees/END-GAME/blob/main/Session_3
 
-# **5 - RNNs & LSTMs**
+# **4 - RNNs & LSTMs**
 
 We will learn about **Recurrent Neural Networks and LSTMS**.  But let's keep in mind that how far RNNs/LSTMs are from the modern state of art.
 
