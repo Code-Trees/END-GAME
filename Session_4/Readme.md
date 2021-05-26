@@ -452,11 +452,11 @@ The model is performing Ok (not impressive )  in 30+10  epochs:
 
 **Validation Accuracy  ----->65.59% (slightly ovetfit as it is fluctuating )**
 
-**Test Accuracy :--------------> 64.39%  **
+**Test Accuracy :--------------> 64.39%**  
 
 <img src="image/train_loss_40.png" alt="Train Loss" style="zoom:100%;" />
 
-![](image/train_acc_40.png)
+![Train Accuracy](image/train_acc_40.png)
 
 
 
