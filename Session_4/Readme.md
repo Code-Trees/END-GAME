@@ -15,9 +15,17 @@
 
 ## **LSTM_sentiment_analysis model**
 
-We are Replacing the RNN model with LSTM , modifying the code to make it  functional . Please find the RNN model link attached
+​	We are Replacing the RNN model with LSTM , modifying the code to make it  functional . Please find the RNN model link attached 
 
-[RNN MODEL]: https://github.com/Code-Trees/END-GAME/blob/main/Session_4/RNN_model.ipynb	"This model we are going to modify to LSTM "
+[here]: https://github.com/Code-Trees/END-GAME/blob/main/Session_4/RNN_model.ipynb	"RNN code."
+
+- As this is for learning purpose we are first modifying the **tokenizer Spacy**  to a simple by by adding the below code . **What is tokenizer ?** Tokenization is a way of separating a piece of text into smaller units called tokens. Here, tokens can be either words, characters, or sub words. Hence, tokenization can be broadly classified into 3 types – word, character, and sub word (n-gram characters) tokenization.
+
+```python
+# just split the data by " "(space) between the words.
+def tokenize(s):
+    return s.split(' ')
+```
 
 
 
