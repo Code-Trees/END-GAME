@@ -25,6 +25,8 @@ We started with basic of AI .We Learned  the below things.
    4. What is "loss" in a neural network?
    5. What is the "chain rule" in gradient flow?
 
+Put Questions : https://github.com/Code-Trees/END-GAME/issues/1
+
 GitHub: https://github.com/Code-Trees/END-GAME/tree/main/Session_1
 
 
@@ -64,6 +66,10 @@ We learned about
 
    1. Sanity, please. 
 
+   
+   
+   Put Questions : https://github.com/Code-Trees/END-GAME/issues/1
+   
    Github:https://github.com/Code-Trees/END-GAME/tree/main/Session_2
 
 
@@ -100,6 +106,10 @@ After Learning We got Task to Do. Trust Me it is Really Easy . Joking .... :-) :
    7. must mention what loss function you picked and why!
    8. training MUST happen on the GPU
 
+
+
+Put Questions : https://github.com/Code-Trees/END-GAME/issues/1
+
 GitHub: https://github.com/Code-Trees/END-GAME/blob/main/Session_3
 
 # **4 - RNNs & LSTMs**
@@ -112,3 +122,10 @@ We will learn about **Recurrent Neural Networks and LSTMS**.  But let's keep in 
 2. Refer to this . 
    1. The questions this time are already mentioned in the file. Once you are done, then write your solutions. 
 
+
+
+
+
+Put Questions : https://github.com/Code-Trees/END-GAME/issues/1
+
+GitHub: https://github.com/Code-Trees/END-GAME/tree/main/Session_4
