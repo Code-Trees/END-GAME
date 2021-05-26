@@ -474,8 +474,6 @@ May be we need more data in training. May be the Splitting of data i could have 
 
 ##### **<u>Fun Fact:</u>**
 
- I have a NVIDIA GTX 960m with 4GB RAM.  It took lot of time to run in my local machine  and it crashed min 10 times  with batch size 16,32, 64 . So i had to run it in colab and wait till the **Spacy tokenizer** to finish the task (After lot of googling i figured it out ). Hence we modified it to custom tokenizer as my intention to build the skeleton first. 
+RNN and LSTMs are obsolete now .But we need to learn the roots to be good. I have a NVIDIA GTX 960m with 4GB RAM.  It took lot of time to run in my local machine  and it crashed min 10 times  with batch size 16,32, 64 . So i had to run it in colab and wait till the **Spacy tokenizer** to finish the task (After lot of googling i figured it out ). Hence we modified it to custom tokenizer as my intention to build the skeleton first. 
 
-
-
-Keep experimenting  :-)
+I will Keep experimenting  :-)
