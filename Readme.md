@@ -1,6 +1,6 @@
 
 
-# Session 1 - Background & Very Basics
+# 1 - Background & Very Basics
 
 We started with basic of AI .We Learned  the below things.
 
@@ -31,7 +31,7 @@ GitHub: https://github.com/Code-Trees/END-GAME/tree/main/Session_1
 
 
 
-# Session 2 - BackProp, Embeddings and Language Models
+# 2 - BackProp, Embeddings and Language Models
 
 Session 2 was shocking .Why ? Because we made a working neural network in Excel sheet.
 
@@ -68,7 +68,7 @@ We learned about
 
 
 
-# Session 3 - PyTorch
+# 3 - PyTorch
 
 ![](images/torch.png)
 
