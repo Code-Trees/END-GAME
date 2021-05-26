@@ -450,7 +450,7 @@ The model is performing Ok (not impressive )  in 30+10  epochs:
 
 **Train Accuracy : ------------> 68.38%  (good improvement)**
 
-**Validation Accuracy  ----->65.59% (slightly ovetfit as it is fluctuating )**
+**Validation Accuracy  ----->65.59% ( ovetfit  and unstable)**
 
 **Test Accuracy :--------------> 64.39%**  
 
