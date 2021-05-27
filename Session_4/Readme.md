@@ -30,7 +30,7 @@ As this is for learning purpose we are first modifying the **tokenizer Spacy**  
 def tokenize(s):
     return s.split(' ')
 
-TEXT = Field(tokenize = tokenize,tokenizer_language = 'en_core_web_sm', lower = True)
+TEXT = Field(tokenize = tokenize,tokenizer_language = 'en_core_web_sm', lower = True,include_lengths = True)
 LABEL = LabelField(dtype = torch.float)
 ```
 
