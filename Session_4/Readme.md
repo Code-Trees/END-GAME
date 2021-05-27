@@ -68,37 +68,43 @@ We have the model Code ready from RNN code. Let's modify it with below updates.
    ```python
    INPUT_DIM = len(TEXT.vocab)
    OUTPUT_DIM = len(LABEL.vocab)
+   
    EMBEDDING_DIM = 100
    HIDDEN_DIM = 256
+   
    N_LAYERS = 1
    DROPOUT = 0.6 #We are going hard on the model bu telling to drop 60% of the neurons and learn . 
    ```
 
 ```python
-# Model class
 class Model(nn.Module):
     def __init__(self, input_dim, output_dim,emb_dim, hidden_dim, n_layers, dropout):
+        # input_dim <--- vocabulary size
+        # output_dim <--- len ([positive, negative]) == 2 
+        # emb_dim <--- embedding dimension of embedding matrix
+
         super(Model, self).__init__()
         self.n_layers = n_layers
         self.hidden_dim = hidden_dim
 
         self.embedding = nn.Embedding(input_dim, emb_dim)
         self.rnn = nn.LSTM(emb_dim, hidden_dim, n_layers, dropout=dropout)
-        
+
         self.fc1 = nn.Linear(hidden_dim, output_dim)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, src):
+    def forward(self, src,Len):
         # shape: [source_len, batch_size]
         embedded = self.dropout(self.embedding(src)) # shape: [src_len, batch_size, embed_dim]
-        output, (hidden, cell) = self.rnn(embedded) 
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, Len.to('cpu'))
+        output, (hidden, cell) = self.rnn(packed) 
         # output shape -> [batch, hidden_dim]
         # hiddden shape -> [n_layers, batch, hidden_dim]
         # cell shape -> [n_layers, batch, hidden_dim]
-        output = self.fc1(output[-1])
+        output = self.fc1(hidden)
 #         output = self.fc2(self.relu(output))
-        return output
+        return output.squeeze(0)
 ```
 
 
@@ -169,11 +175,12 @@ def train(EPOCH,model, iterator, optimizer=optimizer, criterion=criterion, clip=
     total_count = 0
     pbar = tqdm(iterator)
     for i, batch in enumerate(pbar):
-        src = batch.text.to(device)
+        src,data_len = batch.text
+        src = src.to(device)
         trg = batch.label.to(device)
         trg = trg.long()
         optimizer.zero_grad()
-        output = model(src)
+        output = model(src,data_len)
         
         total_correct += torch.sum(torch.eq(output.argmax(1), trg))
         total_count+=len(trg)
@@ -195,19 +202,18 @@ def train(EPOCH,model, iterator, optimizer=optimizer, criterion=criterion, clip=
 
 ```python
 def evaluate(EPOCH,model, iterator, criterion,typ_loader):
-    
     epoch_loss = 0
     epoch_acc = 0
-    
     model.eval()
     pbar  = tqdm(iterator)
     with torch.no_grad():
         
         for i,batch in enumerate(pbar):
-            src = batch.text.to(device)
+            src,data_len = batch.text
+            src = src.to(device)
             trg = batch.label.to(device)
             trg = trg.long()
-            predictions = model(src)
+            predictions = model(src,data_len)
             
             loss = criterion(predictions, trg)
             
@@ -215,17 +221,24 @@ def evaluate(EPOCH,model, iterator, criterion,typ_loader):
 
             epoch_loss += loss.item()
             epoch_acc += acc
-            pbar.set_description(desc= f'Epoch {EPOCH} {typ_loader} Batch No : {i} Loss : {loss.item():.3f} Accuracy : {epoch_acc / len(iterator)* 100 :.2f}% ' )
+            if typ_loader == 'Valid data':
+                validation_loss.append(loss)
+                validation_accuracy.append(acc)
+            elif typ_loader == 'Test data':
+                test_loss.append(loss)
+                test_accuracy.append(acc)
+
+            pbar.set_description(desc= f'     -->{typ_loader} Loss : {loss.item():.3f} | Accuracy : {epoch_acc / len(iterator)* 100 :.2f}% ' )
 ```
 
 ##### <u>**Model Running And o/p:**</u>
 
 to Run the model we run below code:
 
-###### **EPOCHS = 5**
+###### **EPOCHS = 30**
 
 ```python
-total_epoch = 5
+total_epoch = 30
 for epoch in range(total_epoch):
     result = train(epoch,model=model, iterator=train_iterator)
     evaluate(epoch,model,valid_iterator,criterion,'Valid data')
@@ -234,246 +247,109 @@ for epoch in range(total_epoch):
 
 The O/P of our Mehnat is below.
 
-```python
-Epoch 0 Train data Batch No : 546 Loss : 0.701 Accuracy : 49.77% : 100%|██████████| 547/547 [00:37<00:00, 14.55it/s]
-Epoch 0 Valid data Batch No : 234 Loss : 0.692 Accuracy : 50.31% : 100%|██████████| 235/235 [00:02<00:00, 86.82it/s]
-Epoch 0 Test data Batch No : 781 Loss : 0.678 Accuracy : 37.39% : 100%|██████████| 782/782 [00:09<00:00, 86.53it/s]
-Epoch 1 Train data Batch No : 546 Loss : 0.705 Accuracy : 49.93% : 100%|██████████| 547/547 [00:37<00:00, 14.44it/s]
-Epoch 1 Valid data Batch No : 234 Loss : 0.686 Accuracy : 49.99% : 100%|██████████| 235/235 [00:02<00:00, 89.57it/s]
-Epoch 1 Test data Batch No : 781 Loss : 0.704 Accuracy : 57.17% : 100%|██████████| 782/782 [00:08<00:00, 88.91it/s]
-Epoch 2 Train data Batch No : 546 Loss : 0.718 Accuracy : 50.41% : 100%|██████████| 547/547 [00:37<00:00, 14.41it/s]
-Epoch 2 Valid data Batch No : 234 Loss : 0.692 Accuracy : 51.52% : 100%|██████████| 235/235 [00:02<00:00, 89.56it/s]
-Epoch 2 Test data Batch No : 781 Loss : 0.629 Accuracy : 46.12% : 100%|██████████| 782/782 [00:08<00:00, 89.88it/s]
-Epoch 3 Train data Batch No : 546 Loss : 0.679 Accuracy : 50.71% : 100%|██████████| 547/547 [00:37<00:00, 14.61it/s]
-Epoch 3 Valid data Batch No : 234 Loss : 0.685 Accuracy : 50.16% : 100%|██████████| 235/235 [00:02<00:00, 89.85it/s]
-Epoch 3 Test data Batch No : 781 Loss : 0.741 Accuracy : 57.04% : 100%|██████████| 782/782 [00:08<00:00, 89.43it/s]
-Epoch 4 Train data Batch No : 546 Loss : 0.719 Accuracy : 50.35% : 100%|██████████| 547/547 [00:37<00:00, 14.60it/s]
-Epoch 4 Valid data Batch No : 234 Loss : 0.711 Accuracy : 49.58% : 100%|██████████| 235/235 [00:02<00:00, 88.88it/s]
-Epoch 4 Test data Batch No : 781 Loss : 0.778 Accuracy : 56.24% : 100%|██████████| 782/782 [00:08<00:00, 89.35it/s]
-```
-
-The model is Not performing well in 5 epochs 
-
-**Train Accuracy : ------------> 50.35%  (Very bad)**
-
-**Validation Accuracy  -----> 49.58 (Better to flip a coin)**
-
-**Test Accuracy :--------------> 56.34  ( Just got a bit lucky )**
-
-
-
-A function to Check random sentiments: 
+<img src="image/train_loss_30.png" alt="Train Loss" style="zoom:100%;" />
 
 ```python
-mport spacy
-sp = spacy.load('en_core_web_sm')
-
-def predict(sentence):
-    if type(sentence) == str:
-        tokanized_sentence = [word.text for word in sp.tokenizer(sentence)]
-    else:
-        tokanized_sentence = sentence
-
-
-    input_data = [TEXT.vocab.stoi[word.lower()] for word in tokanized_sentence]
-    input_data = torch.tensor(input_data, dtype=torch.int64).unsqueeze(1).to(device)
-
-
-    model.eval()
-    output = model(input_data)
-    # print(output)
-    predict = output.argmax(1)
-    predict = predict.squeeze(0)
-    print(output)
-
-    if predict>0:
-        return "---->> Positive Review"
-    else:
-        return '---->> Negative Review'
+Epoch 0 Train data Batch No : 546 Loss : 0.449 Accuracy : 56.79% : 100%|██████████| 547/547 [00:13<00:00, 39.32it/s]
+     			  -->Valid data Loss : 0.774 | Accuracy : 71.41% : 100%|██████████| 235/235 [00:02<00:00, 88.23it/s]
+     			   -->Test data Loss : 0.506 | Accuracy : 71.77% : 100%|██████████| 782/782 [00:09<00:00, 81.80it/s]
+Epoch 1 Train data Batch No : 546 Loss : 0.547 Accuracy : 71.53% : 100%|██████████| 547/547 [00:13<00:00, 40.02it/s]
+     			  -->Valid data Loss : 0.445 | Accuracy : 78.55% : 100%|██████████| 235/235 [00:02<00:00, 89.43it/s]
+     			   -->Test data Loss : 0.681 | Accuracy : 78.54% : 100%|██████████| 782/782 [00:08<00:00, 92.40it/s]
+Epoch 2 Train data Batch No : 546 Loss : 0.420 Accuracy : 83.29% : 100%|██████████| 547/547 [00:13<00:00, 40.55it/s]
+     			  -->Valid data Loss : 0.201 | Accuracy : 86.47% : 100%|██████████| 235/235 [00:02<00:00, 93.01it/s]
+     			   -->Test data Loss : 0.601 | Accuracy : 85.86% : 100%|██████████| 782/782 [00:09<00:00, 84.30it/s]
+Epoch 3 Train data Batch No : 546 Loss : 0.529 Accuracy : 87.23% : 100%|██████████| 547/547 [00:13<00:00, 39.77it/s]
+     			  -->Valid data Loss : 0.481 | Accuracy : 86.98% : 100%|██████████| 235/235 [00:02<00:00, 88.00it/s]
+     			   -->Test data Loss : 0.576 | Accuracy : 86.65% : 100%|██████████| 782/782 [00:08<00:00, 90.31it/s]
+Epoch 4 Train data Batch No : 546 Loss : 0.324 Accuracy : 89.03% : 100%|██████████| 547/547 [00:13<00:00, 39.90it/s]
+     			  -->Valid data Loss : 0.131 | Accuracy : 87.49% : 100%|██████████| 235/235 [00:02<00:00, 89.28it/s]
+     			   -->Test data Loss : 0.655 | Accuracy : 86.86% : 100%|██████████| 782/782 [00:09<00:00, 83.97it/s]
+Epoch 5 Train data Batch No : 546 Loss : 0.149 Accuracy : 90.48% : 100%|██████████| 547/547 [00:13<00:00, 39.84it/s]
+     			  -->Valid data Loss : 0.007 | Accuracy : 87.89% : 100%|██████████| 235/235 [00:02<00:00, 90.65it/s]
+     			   -->Test data Loss : 1.167 | Accuracy : 86.95% : 100%|██████████| 782/782 [00:08<00:00, 90.34it/s]
+Epoch 6 Train data Batch No : 546 Loss : 0.209 Accuracy : 91.68% : 100%|██████████| 547/547 [00:13<00:00, 39.42it/s]
+     			  -->Valid data Loss : 0.223 | Accuracy : 88.34% : 100%|██████████| 235/235 [00:02<00:00, 88.11it/s]
+     			   -->Test data Loss : 2.639 | Accuracy : 87.19% : 100%|██████████| 782/782 [00:09<00:00, 80.99it/s]
+Epoch 7 Train data Batch No : 546 Loss : 0.183 Accuracy : 92.26% : 100%|██████████| 547/547 [00:13<00:00, 39.57it/s]
+     			  -->Valid data Loss : 0.022 | Accuracy : 89.06% : 100%|██████████| 235/235 [00:02<00:00, 91.91it/s]
+     			   -->Test data Loss : 1.008 | Accuracy : 88.02% : 100%|██████████| 782/782 [00:08<00:00, 92.93it/s]
+Epoch 8 Train data Batch No : 546 Loss : 0.110 Accuracy : 93.11% : 100%|██████████| 547/547 [00:13<00:00, 40.18it/s]
+     			  -->Valid data Loss : 0.209 | Accuracy : 89.05% : 100%|██████████| 235/235 [00:02<00:00, 87.43it/s]
+     			   -->Test data Loss : 0.940 | Accuracy : 88.05% : 100%|██████████| 782/782 [00:09<00:00, 83.63it/s]
+Epoch 9 Train data Batch No : 546 Loss : 0.053 Accuracy : 93.71% : 100%|██████████| 547/547 [00:13<00:00, 39.48it/s]
+     			  -->Valid data Loss : 0.044 | Accuracy : 88.88% : 100%|██████████| 235/235 [00:02<00:00, 87.33it/s]
+     			   -->Test data Loss : 1.269 | Accuracy : 87.56% : 100%|██████████| 782/782 [00:08<00:00, 90.14it/s]
+Epoch 10 Train data Batch No : 546 Loss : 0.345 Accuracy : 94.31% : 100%|██████████| 547/547 [00:13<00:00, 39.68it/s]
+     			   -->Valid data Loss : 0.086 | Accuracy : 89.07% : 100%|██████████| 235/235 [00:02<00:00, 89.16it/s]
+     			    -->Test data Loss : 1.097 | Accuracy : 88.48% : 100%|██████████| 782/782 [00:09<00:00, 85.30it/s]
+Epoch 11 Train data Batch No : 546 Loss : 0.055 Accuracy : 94.61% : 100%|██████████| 547/547 [00:13<00:00, 39.84it/s]
+     			   -->Valid data Loss : 0.117 | Accuracy : 89.23% : 100%|██████████| 235/235 [00:02<00:00, 88.73it/s]
+     			    -->Test data Loss : 1.530 | Accuracy : 88.33% : 100%|██████████| 782/782 [00:08<00:00, 90.74it/s]
+Epoch 12 Train data Batch No : 546 Loss : 0.121 Accuracy : 95.37% : 100%|██████████| 547/547 [00:13<00:00, 39.37it/s]
+     			   -->Valid data Loss : 0.290 | Accuracy : 88.83% : 100%|██████████| 235/235 [00:02<00:00, 88.69it/s]
+     			    -->Test data Loss : 1.773 | Accuracy : 88.07% : 100%|██████████| 782/782 [00:09<00:00, 82.67it/s]
+Epoch 13 Train data Batch No : 546 Loss : 0.093 Accuracy : 95.64% : 100%|██████████| 547/547 [00:13<00:00, 39.46it/s]
+     			   -->Valid data Loss : 0.044 | Accuracy : 88.99% : 100%|██████████| 235/235 [00:02<00:00, 88.12it/s]
+     			    -->Test data Loss : 1.955 | Accuracy : 88.00% : 100%|██████████| 782/782 [00:08<00:00, 90.07it/s]
+Epoch 14 Train data Batch No : 546 Loss : 0.265 Accuracy : 95.86% : 100%|██████████| 547/547 [00:13<00:00, 39.35it/s]
+     			   -->Valid data Loss : 0.043 | Accuracy : 87.70% : 100%|██████████| 235/235 [00:02<00:00, 90.23it/s]
+     			    -->Test data Loss : 2.702 | Accuracy : 85.95% : 100%|██████████| 782/782 [00:09<00:00, 82.32it/s]
+Epoch 15 Train data Batch No : 546 Loss : 0.200 Accuracy : 96.25% : 100%|██████████| 547/547 [00:13<00:00, 39.46it/s]
+     			   -->Valid data Loss : 0.297 | Accuracy : 89.11% : 100%|██████████| 235/235 [00:02<00:00, 88.36it/s]
+     			    -->Test data Loss : 1.150 | Accuracy : 87.97% : 100%|██████████| 782/782 [00:08<00:00, 88.77it/s]
+Epoch 16 Train data Batch No : 546 Loss : 0.009 Accuracy : 96.69% : 100%|██████████| 547/547 [00:13<00:00, 39.60it/s]
+     			   -->Valid data Loss : 0.097 | Accuracy : 88.93% : 100%|██████████| 235/235 [00:02<00:00, 86.73it/s]
+     			    -->Test data Loss : 1.279 | Accuracy : 87.54% : 100%|██████████| 782/782 [00:09<00:00, 81.94it/s]
+Epoch 17 Train data Batch No : 546 Loss : 0.047 Accuracy : 96.85% : 100%|██████████| 547/547 [00:13<00:00, 39.71it/s]
+     			   -->Valid data Loss : 0.160 | Accuracy : 89.17% : 100%|██████████| 235/235 [00:02<00:00, 87.82it/s]
+     			    -->Test data Loss : 1.306 | Accuracy : 87.53% : 100%|██████████| 782/782 [00:08<00:00, 89.29it/s]
+Epoch 18 Train data Batch No : 546 Loss : 0.097 Accuracy : 97.18% : 100%|██████████| 547/547 [00:13<00:00, 39.99it/s]
+     			   -->Valid data Loss : 0.365 | Accuracy : 88.67% : 100%|██████████| 235/235 [00:02<00:00, 92.18it/s]
+     			    -->Test data Loss : 0.902 | Accuracy : 87.78% : 100%|██████████| 782/782 [00:09<00:00, 84.98it/s]
+Epoch 19 Train data Batch No : 546 Loss : 0.066 Accuracy : 97.16% : 100%|██████████| 547/547 [00:13<00:00, 39.89it/s]
+     			   -->Valid data Loss : 0.042 | Accuracy : 89.02% : 100%|██████████| 235/235 [00:02<00:00, 87.48it/s]
+     			    -->Test data Loss : 1.078 | Accuracy : 87.50% : 100%|██████████| 782/782 [00:08<00:00, 88.47it/s]
+Epoch 20 Train data Batch No : 546 Loss : 0.190 Accuracy : 97.42% : 100%|██████████| 547/547 [00:13<00:00, 39.34it/s]
+     			   -->Valid data Loss : 0.076 | Accuracy : 89.02% : 100%|██████████| 235/235 [00:02<00:00, 87.91it/s]
+     			    -->Test data Loss : 0.930 | Accuracy : 86.97% : 100%|██████████| 782/782 [00:09<00:00, 83.87it/s]
+Epoch 21 Train data Batch No : 546 Loss : 0.012 Accuracy : 97.50% : 100%|██████████| 547/547 [00:13<00:00, 39.66it/s]
+     			   -->Valid data Loss : 0.422 | Accuracy : 88.73% : 100%|██████████| 235/235 [00:02<00:00, 87.68it/s]
+     			    -->Test data Loss : 1.097 | Accuracy : 87.36% : 100%|██████████| 782/782 [00:08<00:00, 88.95it/s]
+Epoch 22 Train data Batch No : 546 Loss : 0.018 Accuracy : 97.83% : 100%|██████████| 547/547 [00:13<00:00, 39.42it/s]
+     			   -->Valid data Loss : 0.526 | Accuracy : 88.67% : 100%|██████████| 235/235 [00:02<00:00, 86.20it/s]
+     			    -->Test data Loss : 1.127 | Accuracy : 87.00% : 100%|██████████| 782/782 [00:09<00:00, 82.77it/s]
+Epoch 23 Train data Batch No : 546 Loss : 0.024 Accuracy : 97.90% : 100%|██████████| 547/547 [00:13<00:00, 39.76it/s]
+     			   -->Valid data Loss : 0.410 | Accuracy : 89.05% : 100%|██████████| 235/235 [00:02<00:00, 88.04it/s]
+     			    -->Test data Loss : 1.399 | Accuracy : 87.10% : 100%|██████████| 782/782 [00:08<00:00, 89.85it/s]
+Epoch 24 Train data Batch No : 546 Loss : 0.029 Accuracy : 97.82% : 100%|██████████| 547/547 [00:13<00:00, 39.09it/s]
+     			   -->Valid data Loss : 0.349 | Accuracy : 88.62% : 100%|██████████| 235/235 [00:02<00:00, 85.50it/s]
+     			    -->Test data Loss : 1.263 | Accuracy : 86.88% : 100%|██████████| 782/782 [00:09<00:00, 80.25it/s]
+Epoch 25 Train data Batch No : 546 Loss : 0.008 Accuracy : 98.09% : 100%|██████████| 547/547 [00:13<00:00, 39.23it/s]
+     			   -->Valid data Loss : 0.409 | Accuracy : 88.66% : 100%|██████████| 235/235 [00:02<00:00, 88.64it/s]
+     			    -->Test data Loss : 2.537 | Accuracy : 86.64% : 100%|██████████| 782/782 [00:08<00:00, 89.07it/s]
+Epoch 26 Train data Batch No : 546 Loss : 0.005 Accuracy : 97.94% : 100%|██████████| 547/547 [00:13<00:00, 39.66it/s]
+     			   -->Valid data Loss : 0.147 | Accuracy : 88.38% : 100%|██████████| 235/235 [00:02<00:00, 91.57it/s]
+     			    -->Test data Loss : 1.852 | Accuracy : 86.29% : 100%|██████████| 782/782 [00:08<00:00, 87.70it/s]
+Epoch 27 Train data Batch No : 546 Loss : 0.020 Accuracy : 98.04% : 100%|██████████| 547/547 [00:13<00:00, 39.78it/s]
+     			   -->Valid data Loss : 0.372 | Accuracy : 88.05% : 100%|██████████| 235/235 [00:02<00:00, 88.36it/s]
+     			    -->Test data Loss : 1.935 | Accuracy : 85.97% : 100%|██████████| 782/782 [00:08<00:00, 89.03it/s]
+Epoch 28 Train data Batch No : 546 Loss : 0.022 Accuracy : 98.16% : 100%|██████████| 547/547 [00:13<00:00, 39.56it/s]
+     			   -->Valid data Loss : 0.014 | Accuracy : 88.12% : 100%|██████████| 235/235 [00:02<00:00, 87.21it/s]
+     			    -->Test data Loss : 2.231 | Accuracy : 85.51% : 100%|██████████| 782/782 [00:09<00:00, 82.18it/s]
+Epoch 29 Train data Batch No : 546 Loss : 0.166 Accuracy : 98.32% : 100%|██████████| 547/547 [00:13<00:00, 39.47it/s]
+     			   -->Valid data Loss : 0.521 | Accuracy : 88.40% : 100%|██████████| 235/235 [00:02<00:00, 87.30it/s]
+     			    -->Test data Loss : 1.215 | Accuracy : 86.52% : 100%|██████████| 782/782 [00:08<00:00, 88.75it/s]
 ```
 
-```python
-In [31]:
-predict('Very bad') # predict funciton will predict if this is positive or negative review.
-tensor([[ 0.9696, -0.5756]], device='cuda:0', grad_fn=<AddmmBackward>)
-Out[31]:
-'---->> Negative Review'
-In [32]:
-predict('Very good') # predict funciton will predict if this is positive or negative review.
-tensor([[0.0022, 0.0456]], device='cuda:0', grad_fn=<AddmmBackward>)
-Out[32]:
-'---->> Positive Review'
-In [34]:
-predict('i recommend to watch the movie once. It is mindblowing') # predict funciton will predict if this is positive or negative review.
-tensor([[ 0.2117, -0.0614]], device='cuda:0', grad_fn=<AddmmBackward>)
-Out[34]:
-'---->> Negative Review'
-```
+The model is over fit   in 30 epochs 
+
+**Train Accuracy : ------------> 98.32%  **
+
+**Validation Accuracy  -----> 88.40% **
+
+**Test Accuracy :--------------> 86.52%  **
 
 
 
-Now Let's Try running it with More epochs and let's use Spacy to see the difference.
-
-###### **EPOCH = 30** + 10  
-
-```python
-Epoch 0 Train data Batch No : 546 Loss : 0.689 Accuracy : 50.39% : 100%|██████████| 547/547 [00:39<00:00, 14.01it/s]
-Epoch 0 Valid data Batch No : 234 Loss : 0.680 Accuracy : 50.70% : 100%|██████████| 235/235 [00:02<00:00, 94.77it/s]
-Epoch 0 Test data Batch No : 781 Loss : 0.691 Accuracy : 59.86% : 100%|██████████| 782/782 [00:08<00:00, 97.39it/s]
-Epoch 1 Train data Batch No : 546 Loss : 0.704 Accuracy : 50.59% : 100%|██████████| 547/547 [00:39<00:00, 13.97it/s]
-Epoch 1 Valid data Batch No : 234 Loss : 0.709 Accuracy : 50.36% : 100%|██████████| 235/235 [00:02<00:00, 94.14it/s]
-Epoch 1 Test data Batch No : 781 Loss : 0.704 Accuracy : 56.90% : 100%|██████████| 782/782 [00:08<00:00, 97.40it/s]
-Epoch 2 Train data Batch No : 546 Loss : 0.695 Accuracy : 50.19% : 100%|██████████| 547/547 [00:39<00:00, 13.96it/s]
-Epoch 2 Valid data Batch No : 234 Loss : 0.692 Accuracy : 49.76% : 100%|██████████| 235/235 [00:02<00:00, 96.10it/s]
-Epoch 2 Test data Batch No : 781 Loss : 0.667 Accuracy : 65.44% : 100%|██████████| 782/782 [00:07<00:00, 99.12it/s]
-Epoch 3 Train data Batch No : 546 Loss : 0.678 Accuracy : 50.62% : 100%|██████████| 547/547 [00:39<00:00, 13.94it/s]
-Epoch 3 Valid data Batch No : 234 Loss : 0.797 Accuracy : 50.20% : 100%|██████████| 235/235 [00:02<00:00, 95.54it/s]
-Epoch 3 Test data Batch No : 781 Loss : 0.712 Accuracy : 55.87% : 100%|██████████| 782/782 [00:07<00:00, 98.03it/s]
-Epoch 4 Train data Batch No : 546 Loss : 0.702 Accuracy : 50.35% : 100%|██████████| 547/547 [00:39<00:00, 13.90it/s]
-Epoch 4 Valid data Batch No : 234 Loss : 0.760 Accuracy : 51.24% : 100%|██████████| 235/235 [00:02<00:00, 94.89it/s]
-Epoch 4 Test data Batch No : 781 Loss : 0.700 Accuracy : 57.70% : 100%|██████████| 782/782 [00:07<00:00, 97.89it/s]
-Epoch 5 Train data Batch No : 546 Loss : 0.699 Accuracy : 50.40% : 100%|██████████| 547/547 [00:39<00:00, 13.86it/s]
-Epoch 5 Valid data Batch No : 234 Loss : 0.661 Accuracy : 52.41% : 100%|██████████| 235/235 [00:02<00:00, 94.64it/s]
-Epoch 5 Test data Batch No : 781 Loss : 0.679 Accuracy : 52.35% : 100%|██████████| 782/782 [00:07<00:00, 97.92it/s]
-Epoch 6 Train data Batch No : 546 Loss : 0.679 Accuracy : 50.10% : 100%|██████████| 547/547 [00:39<00:00, 13.93it/s]
-Epoch 6 Valid data Batch No : 234 Loss : 0.724 Accuracy : 55.51% : 100%|██████████| 235/235 [00:02<00:00, 93.84it/s]
-Epoch 6 Test data Batch No : 781 Loss : 0.718 Accuracy : 57.09% : 100%|██████████| 782/782 [00:08<00:00, 97.29it/s]
-Epoch 7 Train data Batch No : 546 Loss : 0.695 Accuracy : 50.86% : 100%|██████████| 547/547 [00:39<00:00, 13.90it/s]
-Epoch 7 Valid data Batch No : 234 Loss : 0.693 Accuracy : 52.15% : 100%|██████████| 235/235 [00:02<00:00, 94.41it/s]
-Epoch 7 Test data Batch No : 781 Loss : 0.755 Accuracy : 58.32% : 100%|██████████| 782/782 [00:08<00:00, 97.57it/s]
-Epoch 8 Train data Batch No : 546 Loss : 0.681 Accuracy : 50.58% : 100%|██████████| 547/547 [00:39<00:00, 13.90it/s]
-Epoch 8 Valid data Batch No : 234 Loss : 0.776 Accuracy : 52.85% : 100%|██████████| 235/235 [00:02<00:00, 95.52it/s]
-Epoch 8 Test data Batch No : 781 Loss : 0.640 Accuracy : 60.63% : 100%|██████████| 782/782 [00:07<00:00, 98.32it/s]
-Epoch 9 Train data Batch No : 546 Loss : 0.742 Accuracy : 50.27% : 100%|██████████| 547/547 [00:39<00:00, 13.78it/s]
-Epoch 9 Valid data Batch No : 234 Loss : 0.747 Accuracy : 53.05% : 100%|██████████| 235/235 [00:02<00:00, 91.35it/s]
-Epoch 9 Test data Batch No : 781 Loss : 0.658 Accuracy : 60.11% : 100%|██████████| 782/782 [00:08<00:00, 94.47it/s]
-Epoch 10 Train data Batch No : 546 Loss : 0.680 Accuracy : 51.29% : 100%|██████████| 547/547 [00:39<00:00, 13.94it/s]
-Epoch 10 Valid data Batch No : 234 Loss : 0.701 Accuracy : 55.56% : 100%|██████████| 235/235 [00:02<00:00, 95.66it/s]
-Epoch 10 Test data Batch No : 781 Loss : 0.631 Accuracy : 59.41% : 100%|██████████| 782/782 [00:07<00:00, 97.91it/s]
-Epoch 11 Train data Batch No : 546 Loss : 0.674 Accuracy : 51.51% : 100%|██████████| 547/547 [00:39<00:00, 13.83it/s]
-Epoch 11 Valid data Batch No : 234 Loss : 0.731 Accuracy : 57.70% : 100%|██████████| 235/235 [00:02<00:00, 92.88it/s]
-Epoch 11 Test data Batch No : 781 Loss : 0.638 Accuracy : 58.23% : 100%|██████████| 782/782 [00:08<00:00, 96.74it/s]
-Epoch 12 Train data Batch No : 546 Loss : 0.675 Accuracy : 51.11% : 100%|██████████| 547/547 [00:39<00:00, 13.85it/s]
-Epoch 12 Valid data Batch No : 234 Loss : 0.721 Accuracy : 57.30% : 100%|██████████| 235/235 [00:02<00:00, 96.08it/s]
-Epoch 12 Test data Batch No : 781 Loss : 0.598 Accuracy : 57.64% : 100%|██████████| 782/782 [00:07<00:00, 98.32it/s]
-Epoch 13 Train data Batch No : 546 Loss : 0.698 Accuracy : 51.32% : 100%|██████████| 547/547 [00:39<00:00, 14.01it/s]
-Epoch 13 Valid data Batch No : 234 Loss : 0.720 Accuracy : 57.81% : 100%|██████████| 235/235 [00:02<00:00, 93.96it/s]
-Epoch 13 Test data Batch No : 781 Loss : 0.640 Accuracy : 59.02% : 100%|██████████| 782/782 [00:07<00:00, 98.55it/s]
-Epoch 14 Train data Batch No : 546 Loss : 0.695 Accuracy : 50.51% : 100%|██████████| 547/547 [00:39<00:00, 13.92it/s]
-Epoch 14 Valid data Batch No : 234 Loss : 0.662 Accuracy : 56.42% : 100%|██████████| 235/235 [00:02<00:00, 93.08it/s]
-Epoch 14 Test data Batch No : 781 Loss : 0.629 Accuracy : 57.51% : 100%|██████████| 782/782 [00:08<00:00, 91.33it/s]
-Epoch 15 Train data Batch No : 546 Loss : 0.684 Accuracy : 50.38% : 100%|██████████| 547/547 [00:39<00:00, 13.95it/s]
-Epoch 15 Valid data Batch No : 234 Loss : 0.743 Accuracy : 55.82% : 100%|██████████| 235/235 [00:02<00:00, 92.96it/s]
-Epoch 15 Test data Batch No : 781 Loss : 0.632 Accuracy : 63.32% : 100%|██████████| 782/782 [00:07<00:00, 98.17it/s]
-Epoch 16 Train data Batch No : 546 Loss : 0.668 Accuracy : 50.79% : 100%|██████████| 547/547 [00:39<00:00, 13.95it/s]
-Epoch 16 Valid data Batch No : 234 Loss : 0.822 Accuracy : 58.18% : 100%|██████████| 235/235 [00:02<00:00, 95.79it/s]
-Epoch 16 Test data Batch No : 781 Loss : 0.638 Accuracy : 60.92% : 100%|██████████| 782/782 [00:07<00:00, 98.11it/s]
-Epoch 17 Train data Batch No : 546 Loss : 0.695 Accuracy : 51.34% : 100%|██████████| 547/547 [00:39<00:00, 13.83it/s]
-Epoch 17 Valid data Batch No : 234 Loss : 0.673 Accuracy : 59.45% : 100%|██████████| 235/235 [00:02<00:00, 94.70it/s]
-Epoch 17 Test data Batch No : 781 Loss : 0.610 Accuracy : 58.03% : 100%|██████████| 782/782 [00:08<00:00, 97.67it/s]
-Epoch 18 Train data Batch No : 546 Loss : 0.709 Accuracy : 51.44% : 100%|██████████| 547/547 [00:39<00:00, 13.86it/s]
-Epoch 18 Valid data Batch No : 234 Loss : 0.670 Accuracy : 58.36% : 100%|██████████| 235/235 [00:02<00:00, 95.62it/s]
-Epoch 18 Test data Batch No : 781 Loss : 0.649 Accuracy : 60.29% : 100%|██████████| 782/782 [00:07<00:00, 98.12it/s]
-Epoch 19 Train data Batch No : 546 Loss : 0.695 Accuracy : 50.62% : 100%|██████████| 547/547 [00:39<00:00, 13.88it/s]
-Epoch 19 Valid data Batch No : 234 Loss : 0.717 Accuracy : 58.66% : 100%|██████████| 235/235 [00:02<00:00, 93.91it/s]
-Epoch 19 Test data Batch No : 781 Loss : 0.766 Accuracy : 59.63% : 100%|██████████| 782/782 [00:08<00:00, 96.89it/s]
-Epoch 20 Train data Batch No : 546 Loss : 0.688 Accuracy : 50.39% : 100%|██████████| 547/547 [00:38<00:00, 14.03it/s]
-Epoch 20 Valid data Batch No : 234 Loss : 0.687 Accuracy : 59.36% : 100%|██████████| 235/235 [00:02<00:00, 94.61it/s]
-Epoch 20 Test data Batch No : 781 Loss : 0.633 Accuracy : 60.23% : 100%|██████████| 782/782 [00:07<00:00, 98.22it/s]
-Epoch 21 Train data Batch No : 546 Loss : 0.678 Accuracy : 51.20% : 100%|██████████| 547/547 [00:39<00:00, 13.93it/s]
-Epoch 21 Valid data Batch No : 234 Loss : 0.675 Accuracy : 60.35% : 100%|██████████| 235/235 [00:02<00:00, 95.53it/s]
-Epoch 21 Test data Batch No : 781 Loss : 0.626 Accuracy : 60.77% : 100%|██████████| 782/782 [00:07<00:00, 98.44it/s]
-Epoch 22 Train data Batch No : 546 Loss : 0.757 Accuracy : 51.02% : 100%|██████████| 547/547 [00:39<00:00, 13.94it/s]
-Epoch 22 Valid data Batch No : 234 Loss : 0.728 Accuracy : 60.04% : 100%|██████████| 235/235 [00:02<00:00, 95.59it/s]
-Epoch 22 Test data Batch No : 781 Loss : 0.636 Accuracy : 60.67% : 100%|██████████| 782/782 [00:07<00:00, 98.95it/s]
-Epoch 23 Train data Batch No : 546 Loss : 0.682 Accuracy : 50.82% : 100%|██████████| 547/547 [00:39<00:00, 13.93it/s]
-Epoch 23 Valid data Batch No : 234 Loss : 0.666 Accuracy : 57.76% : 100%|██████████| 235/235 [00:02<00:00, 96.53it/s]
-Epoch 23 Test data Batch No : 781 Loss : 0.617 Accuracy : 57.94% : 100%|██████████| 782/782 [00:07<00:00, 98.93it/s]
-Epoch 24 Train data Batch No : 546 Loss : 0.671 Accuracy : 51.40% : 100%|██████████| 547/547 [00:39<00:00, 13.98it/s]
-Epoch 24 Valid data Batch No : 234 Loss : 0.694 Accuracy : 59.88% : 100%|██████████| 235/235 [00:02<00:00, 95.36it/s]
-Epoch 24 Test data Batch No : 781 Loss : 0.695 Accuracy : 59.97% : 100%|██████████| 782/782 [00:07<00:00, 98.93it/s]
-Epoch 25 Train data Batch No : 546 Loss : 0.662 Accuracy : 51.35% : 100%|██████████| 547/547 [00:39<00:00, 13.90it/s]
-Epoch 25 Valid data Batch No : 234 Loss : 0.680 Accuracy : 60.57% : 100%|██████████| 235/235 [00:02<00:00, 95.39it/s]
-Epoch 25 Test data Batch No : 781 Loss : 1.209 Accuracy : 60.97% : 100%|██████████| 782/782 [00:07<00:00, 99.18it/s]
-Epoch 26 Train data Batch No : 546 Loss : 0.677 Accuracy : 50.83% : 100%|██████████| 547/547 [00:39<00:00, 13.89it/s]
-Epoch 26 Valid data Batch No : 234 Loss : 0.741 Accuracy : 61.25% : 100%|██████████| 235/235 [00:02<00:00, 95.24it/s]
-Epoch 26 Test data Batch No : 781 Loss : 0.952 Accuracy : 60.46% : 100%|██████████| 782/782 [00:07<00:00, 99.71it/s]
-Epoch 27 Train data Batch No : 546 Loss : 0.677 Accuracy : 50.79% : 100%|██████████| 547/547 [00:39<00:00, 13.87it/s]
-Epoch 27 Valid data Batch No : 234 Loss : 0.714 Accuracy : 61.88% : 100%|██████████| 235/235 [00:02<00:00, 95.94it/s]
-Epoch 27 Test data Batch No : 781 Loss : 0.647 Accuracy : 61.46% : 100%|██████████| 782/782 [00:07<00:00, 98.70it/s]
-Epoch 28 Train data Batch No : 546 Loss : 0.688 Accuracy : 54.85% : 100%|██████████| 547/547 [00:39<00:00, 13.92it/s]
-Epoch 28 Valid data Batch No : 234 Loss : 0.689 Accuracy : 63.01% : 100%|██████████| 235/235 [00:02<00:00, 92.51it/s]
-Epoch 28 Test data Batch No : 781 Loss : 0.775 Accuracy : 62.01% : 100%|██████████| 782/782 [00:08<00:00, 96.82it/s]
-Epoch 29 Train data Batch No : 546 Loss : 0.714 Accuracy : 60.79% : 100%|██████████| 547/547 [00:38<00:00, 14.04it/s]
-Epoch 29 Valid data Batch No : 234 Loss : 0.686 Accuracy : 64.84% : 100%|██████████| 235/235 [00:02<00:00, 95.66it/s]
-Epoch 29 Test data Batch No : 781 Loss : 0.412 Accuracy : 63.88% : 100%|██████████| 782/782 [00:07<00:00, 99.30it/s]
-```
-
-###### **+10**
-
-```python
-Epoch 0 Train data Batch No : 546 Loss : 0.560 Accuracy : 63.38% : 100%|██████████| 547/547 [00:39<00:00, 13.97it/s]
-Epoch 0 Valid data Batch No : 234 Loss : 1.076 Accuracy : 58.87% : 100%|██████████| 235/235 [00:02<00:00, 96.49it/s]
-Epoch 0 Test data Batch No : 781 Loss : 1.146 Accuracy : 58.08% : 100%|██████████| 782/782 [00:07<00:00, 100.07it/s]
-Epoch 1 Train data Batch No : 546 Loss : 0.582 Accuracy : 64.92% : 100%|██████████| 547/547 [00:39<00:00, 13.96it/s]
-Epoch 1 Valid data Batch No : 234 Loss : 0.598 Accuracy : 60.56% : 100%|██████████| 235/235 [00:02<00:00, 97.36it/s]
-Epoch 1 Test data Batch No : 781 Loss : 0.458 Accuracy : 60.02% : 100%|██████████| 782/782 [00:07<00:00, 100.21it/s]
-Epoch 2 Train data Batch No : 546 Loss : 0.611 Accuracy : 65.27% : 100%|██████████| 547/547 [00:39<00:00, 14.02it/s]
-Epoch 2 Valid data Batch No : 234 Loss : 0.844 Accuracy : 62.34% : 100%|██████████| 235/235 [00:02<00:00, 96.57it/s]
-Epoch 2 Test data Batch No : 781 Loss : 0.870 Accuracy : 61.88% : 100%|██████████| 782/782 [00:07<00:00, 99.94it/s]
-Epoch 3 Train data Batch No : 546 Loss : 0.519 Accuracy : 66.63% : 100%|██████████| 547/547 [00:39<00:00, 14.00it/s]
-Epoch 3 Valid data Batch No : 234 Loss : 0.684 Accuracy : 64.69% : 100%|██████████| 235/235 [00:02<00:00, 96.73it/s]
-Epoch 3 Test data Batch No : 781 Loss : 0.329 Accuracy : 63.36% : 100%|██████████| 782/782 [00:07<00:00, 100.27it/s]
-Epoch 4 Train data Batch No : 546 Loss : 0.767 Accuracy : 67.06% : 100%|██████████| 547/547 [00:39<00:00, 14.02it/s]
-Epoch 4 Valid data Batch No : 234 Loss : 0.890 Accuracy : 61.38% : 100%|██████████| 235/235 [00:02<00:00, 95.56it/s]
-Epoch 4 Test data Batch No : 781 Loss : 0.596 Accuracy : 60.96% : 100%|██████████| 782/782 [00:08<00:00, 97.62it/s]
-Epoch 5 Train data Batch No : 546 Loss : 0.534 Accuracy : 67.81% : 100%|██████████| 547/547 [00:39<00:00, 13.97it/s]
-Epoch 5 Valid data Batch No : 234 Loss : 0.545 Accuracy : 63.23% : 100%|██████████| 235/235 [00:02<00:00, 96.28it/s]
-Epoch 5 Test data Batch No : 781 Loss : 0.617 Accuracy : 62.17% : 100%|██████████| 782/782 [00:07<00:00, 100.20it/s]
-Epoch 6 Train data Batch No : 546 Loss : 0.598 Accuracy : 68.55% : 100%|██████████| 547/547 [00:39<00:00, 14.01it/s]
-Epoch 6 Valid data Batch No : 234 Loss : 0.749 Accuracy : 63.19% : 100%|██████████| 235/235 [00:02<00:00, 97.02it/s]
-Epoch 6 Test data Batch No : 781 Loss : 0.571 Accuracy : 62.18% : 100%|██████████| 782/782 [00:07<00:00, 100.31it/s]
-Epoch 7 Train data Batch No : 546 Loss : 0.557 Accuracy : 67.69% : 100%|██████████| 547/547 [00:38<00:00, 14.11it/s]
-Epoch 7 Valid data Batch No : 234 Loss : 0.534 Accuracy : 66.60% : 100%|██████████| 235/235 [00:02<00:00, 96.43it/s]
-Epoch 7 Test data Batch No : 781 Loss : 0.298 Accuracy : 65.31% : 100%|██████████| 782/782 [00:07<00:00, 99.79it/s]
-Epoch 8 Train data Batch No : 546 Loss : 0.796 Accuracy : 68.19% : 100%|██████████| 547/547 [00:39<00:00, 13.91it/s]
-Epoch 8 Valid data Batch No : 234 Loss : 0.836 Accuracy : 69.23% : 100%|██████████| 235/235 [00:02<00:00, 96.19it/s]
-Epoch 8 Test data Batch No : 781 Loss : 0.312 Accuracy : 68.22% : 100%|██████████| 782/782 [00:07<00:00, 99.82it/s]
-Epoch 9 Train data Batch No : 546 Loss : 0.722 Accuracy : 68.38% : 100%|██████████| 547/547 [00:39<00:00, 14.00it/s]
-Epoch 9 Valid data Batch No : 234 Loss : 0.618 Accuracy : 65.59% : 100%|██████████| 235/235 [00:02<00:00, 96.19it/s]
-Epoch 9 Test data Batch No : 781 Loss : 0.293 Accuracy : 64.39% : 100%|██████████| 782/782 [00:07<00:00, 99.94it/s]
-```
-
-
-
-The model is performing Ok (not impressive )  in 30+10  epochs: 
-
-**Train Accuracy : ------------> 68.38%  (good improvement)**
-
-**Validation Accuracy  ----->65.59% ( ovetfit  and unstable)**
-
-**Test Accuracy :--------------> 64.39%**  
-
-<img src="image/train_loss_40.png" alt="Train Loss" style="zoom:100%;" />
-
-![Train Accuracy](image/train_acc_40.png)
-
-
-
-
-
-Model performance has increased but not much. Suddenly Train accuracy increased from 51 to 63 then 63% 68% .But Test and validation accuracy is still not better. Is it over fitting now ? YES .  Is it worth running it for higher number of epoch with the Given result ? I don't think so .it performs Better than before but not marginally better.
-
-
-
-##### **<u>TAKEOUTS</u>**
-
-Still  **IT'S JUST NOT PERFORMING WELL**. Is it too soon to tell that ? , Do we need to run it for more epochs ? What to do to improve the model ?
-
-May be we need more data in training. May be the Splitting of data i could have done as **train 70% (validation 10% of 70% ) test 30%**. May be we can **Tune learning rate** or **reduce dropout**  or add some more layers . 
-
-##### **<u>Fun Fact:</u>**
-
-RNN and LSTMs are obsolete now .But we need to learn the roots to be good. I have a NVIDIA GTX 960m with 4GB RAM.  It took lot of time to run in my local machine  and it crashed min 10 times  with batch size 16,32, 64 . So i had to run it in colab and wait till the **Spacy tokenizer** to finish the task (After lot of googling i figured it out ). Hence we modified it to custom tokenizer as my intention to build the skeleton first. 
-
-I will Keep experimenting  :-)
+Model performance has increased. Train accuracy increased from 56.79% to 98.32%  .But Test and validation accuracy is still not better compare to Train. Is it over fitting now ? YES .  Is it worth running it for higher number of epoch with the Given result ? I don't think so .it performs Better than before but not marginally better because of over fit. We can try some regularisation techniques 
