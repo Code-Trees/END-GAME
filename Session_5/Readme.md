@@ -1,6 +1,6 @@
 # First Hands-on
 
-TO-DO
+**TO-DO**
 
 
 
@@ -14,7 +14,11 @@ TO-DO
 
 
 
-1> Adding Data Augmentation Technique.
+**1> Adding Data Augmentation Technique.**
+
+
+
+https://github.com/Code-Trees/END-GAME/blob/main/Session_5/Augmentation.ipynb
 
 We have the below code to  which can do the data augmentation bu calling the functions:
 
@@ -75,7 +79,7 @@ def random_swap(sentence,lab, n=5):
 
 
 
-Function to use.
+**Function to use.**
 
 ```python
 # train_data.sentence
@@ -122,7 +126,7 @@ Before the shape was :10754
 
 
 
-Data Reading.
+**2> Data Reading.**
 
 ```python
 def get_phrase_sentiments(base_directory):
@@ -183,7 +187,7 @@ def discretize_label(label):
 
 
 
-**Model** 
+**2>Model Building ** 
 
 
 
@@ -371,7 +375,7 @@ Epoch 59  TEST DATA Batch No : 34 Epoch Loss: 56.727  Loss : 1.632 | Accuracy : 
 
 
 
-Augmented Data Visualization
+**4>Augmented Data Visualization**
 
 [62]:
 
